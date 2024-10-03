@@ -35,9 +35,6 @@ weather_data_zipped_fixed = zip(
     weather_precipitation_probability,
 )
 
-for i in weather_data_zipped_fixed:
-    print(i)
-
 calendar_url = "https://ics.tko-aly.fi/"
 
 response = requests.get(calendar_url)
