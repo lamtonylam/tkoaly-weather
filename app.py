@@ -1,7 +1,7 @@
 import icalendar
 import requests
+import pytz
 from flask import Flask
-from datetime import timedelta
 from datetime import datetime
 import pandas as pd
 
@@ -14,7 +14,9 @@ weather_time_list = weather_data["hourly"]["time"]
 
 # to datetime object
 weather_time_list = [
-    datetime.strptime(time, "%Y-%m-%dT%H:%M") for time in weather_time_list
+    # datetime.strptime(time, "%Y-%m-%dT%H:%M").replace(tzinfo=timezone.utc)
+    datetime.strptime(time, "%Y-%m-%dT%H:%M").replace(tzinfo=pytz.UTC)
+    for time in weather_time_list
 ]
 
 weather_tempature_list = weather_data["hourly"]["temperature_2m"]
@@ -40,27 +42,31 @@ event_dict = {}
 calendar = icalendar.Calendar.from_ical(response.content)
 
 for event in calendar.walk("VEVENT"):
-    name = str(event.decoded("SUMMARY"), "utf-8")
-    gmt_date = event.decoded("dtstart")
-    pandas_event_date = pd.to_datetime(gmt_date)
+    event_name = str(event.decoded("SUMMARY"), "utf-8")
+    gmt_eventdate = event.decoded("dtstart")
+    pandas_event_date = pd.to_datetime(gmt_eventdate)
     rounded_event_date = pandas_event_date.floor("H").to_pydatetime()
+
+    helsinki_time = gmt_eventdate + pd.Timedelta(hours=3)
 
     for i in weather_data_zipped:
         weather_date = i[0]
         if weather_date == rounded_event_date:
-            print(name)
+            event_dict[event_name] = [
+                f"{str(helsinki_time)[:-9]} <br> <b>{round(i[1])} °C</b>  <br> sateen todennäköisyys: <b>{i[2]}%</b> <br> sademäärä: <b>{i[3]} mm</b>"
+            ]
 
 
-# app = Flask(__name__)
+app = Flask(__name__)
 
 
-# @app.route("/")
-# def hello_world():
-#     html = "<h1>Tekis Weather</h1>"
-#     for event, weather in event_dict.items():
-#         html += f"<b><p>{event}</b>: <br> {weather[0]}</p>"
-#     html = (
-#         html
-#         + "<br><br><br><b>  </b> <br> <a href='https://www.cs.helsinki.fi/u/tonylam/'>Tony Lam</a>"
-#     )
-#     return html
+@app.route("/")
+def hello_world():
+    html = "<h1>Tekis Weather</h1>"
+    for event, weather in event_dict.items():
+        html += f"<b><p>{event}</b>: <br> {weather[0]}</p>"
+    html = (
+        html
+        + "<br><br><br><b>  </b> <br> <a href='https://www.cs.helsinki.fi/u/tonylam/'>Tony Lam</a>"
+    )
+    return html
