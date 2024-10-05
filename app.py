@@ -52,10 +52,15 @@ for event in calendar.walk("VEVENT"):
     for i in weather_data_zipped:
         weather_date = i[0]
         if weather_date == rounded_event_date:
-            event_dict[event_name] = [
-                f"{str(helsinki_time)[:-9]} <br> <b>{round(i[1])} °C</b>  <br> sateen todennäköisyys: <b>{i[2]}%</b> <br> sademäärä: <b>{i[3]} mm</b>"
-            ]
+            event_dict[event_name] = (
+                f"{str(helsinki_time)[:-9]} <br> <b>{round(i[1])} °C</b>  <br> sateen todennäköisyys: <b>{i[2]}%</b> <br> sademäärä: <b>{i[3]} mm</b>",
+                [helsinki_time],
+            )
 
+# sort by date correctly
+items = event_dict.items()
+sorted_items = sorted(items, key=lambda item: item[1][1])
+event_dict = dict(sorted_items)
 
 app = Flask(__name__)
 
